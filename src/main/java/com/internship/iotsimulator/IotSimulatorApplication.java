@@ -17,13 +17,4 @@ public class IotSimulatorApplication {
 		SpringApplication.run(IotSimulatorApplication.class, args);
 	}
 
-	/*@Bean
-	public void startService() {
-		service.startSession();
-	}
-	@PreDestroy
-	public void endService(){
-		service.endSession();
-	} */
-
 }
