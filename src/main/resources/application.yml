@@ -1,0 +1,8 @@
+server:
+  port: 8081
+device:
+  machine-id: 3
+  device-id: 4
+control-panel:
+  controller-path: http://localhost:8080/assets/iotsession
+  metrics-path: /device_metrics
