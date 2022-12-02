@@ -1,4 +1,4 @@
-package com.internship.iotsimulator.configs;
+package com.internship.iotsimulator.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;

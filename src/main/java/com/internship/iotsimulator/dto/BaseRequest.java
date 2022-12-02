@@ -1,4 +1,4 @@
-package com.internship.iotsimulator.dtos;
+package com.internship.iotsimulator.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
