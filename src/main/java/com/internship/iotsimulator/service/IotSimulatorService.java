@@ -6,7 +6,6 @@ import com.internship.iotsimulator.config.ControlPanelProperties;
 import com.internship.iotsimulator.config.MetricsSimulator;
 import com.internship.iotsimulator.dto.DeviceConnectionRequest;
 import com.internship.iotsimulator.dto.DeviceConnectionResponse;
-import com.internship.iotsimulator.dto.MetricsRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
@@ -14,7 +13,6 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PreDestroy;
 import java.util.*;
-
 
 
 @Service
@@ -70,13 +68,12 @@ public class IotSimulatorService {
     } */
     @Async("asyncScheduler")
     public void sendMetrics(Long sessionId, Long intervalInSeconds) {
-            metricsSimulator.setSessionId(sessionId);
-            metricsSimulator.setIntervalInSeconds(intervalInSeconds);
-            tasks.put(sessionId, metricsSimulator);
-            metricsSimulator.run();
+        metricsSimulator.setSessionId(sessionId);
+        metricsSimulator.setIntervalInSeconds(intervalInSeconds);
+        tasks.put(sessionId, metricsSimulator);
+        metricsSimulator.run();
 
-            // asyncConfiguration.taskScheduler().scheduleAtFixedRate(metricsSimulator, intervalInSeconds);
-        }
+        // asyncConfiguration.taskScheduler().scheduleAtFixedRate(metricsSimulator, intervalInSeconds);
     }
 
 
