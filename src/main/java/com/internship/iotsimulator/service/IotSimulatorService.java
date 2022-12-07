@@ -70,7 +70,6 @@ public class IotSimulatorService {
     } */
     @Async("asyncScheduler")
     public void sendMetrics(Long sessionId, Long intervalInSeconds) {
-        if (metricsSimulator.getIsActive()) {
             metricsSimulator.setSessionId(sessionId);
             metricsSimulator.setIntervalInSeconds(intervalInSeconds);
             tasks.put(sessionId, metricsSimulator);

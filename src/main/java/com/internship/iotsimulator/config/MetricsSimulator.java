@@ -27,6 +27,15 @@ public class MetricsSimulator implements Runnable {
 
     @Override
     public void run() {
+        Random random = new Random();
+        Integer value = random.nextInt();
+        MetricsRequest metricsRequest = new MetricsRequest(value);
+        String url = String.format("%s/%s/%s", controlPanelProperties.getControllerPath(), sessionId, controlPanelProperties.getMetricsPath());
+        connectionConfig.getRestTemplate().postForObject(url, metricsRequest, Object.class);
+        log.info("sending metrics in session# {}", sessionId);
+    }
+
+        /* public void run() {
         for (int i = 1; i > 0; i++) {
             try {
                 Thread.sleep(intervalInSeconds);
@@ -42,15 +51,7 @@ public class MetricsSimulator implements Runnable {
             log.info("sending metrics in session# {}", sessionId);
         }
     }
-
-    /*
-        public void run() {
-        Random random = new Random();
-        Integer value = random.nextInt();
-        MetricsRequest metricsRequest = new MetricsRequest(value);
-        String url = String.format("%s/%s/%s", controlPanelProperties.getControllerPath(), sessionId, controlPanelProperties.getMetricsPath());
-        connectionConfig.getRestTemplate().postForObject(url, metricsRequest, Object.class);
-        log.info("sending metrics in session# {}", sessionId);
-        }
     */
+
+
 }
