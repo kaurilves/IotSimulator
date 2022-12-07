@@ -1,22 +1,20 @@
 package com.internship.iotsimulator.service;
 
 import com.internship.iotsimulator.config.AsyncConfiguration;
+import com.internship.iotsimulator.config.ConnectionConfig;
 import com.internship.iotsimulator.config.ControlPanelProperties;
-import com.internship.iotsimulator.dto.BaseRequest;
-import com.internship.iotsimulator.dto.BaseResponse;
+import com.internship.iotsimulator.config.MetricsSimulator;
+import com.internship.iotsimulator.dto.DeviceConnectionRequest;
+import com.internship.iotsimulator.dto.DeviceConnectionResponse;
 import com.internship.iotsimulator.dto.MetricsRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
-import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.PreDestroy;
 import java.util.*;
-import java.util.concurrent.*;
+
 
 
 @Service
@@ -26,54 +24,32 @@ public class IotSimulatorService {
 
     @Autowired
     private ControlPanelProperties controlPanelProperties;
-    private static final Map<Long, AsyncConfiguration> tasks = new HashMap<>();
+
+    private final Map<Long, MetricsSimulator> tasks = new HashMap<>();
 
     @Autowired
     private AsyncConfiguration asyncConfiguration;
 
-    @Bean
-    public RestTemplate getRestTemplate() {
-        return new RestTemplate();
+    @Autowired
+    private ConnectionConfig connectionConfig;
+
+    @Autowired
+    private MetricsSimulator metricsSimulator;
+
+    public DeviceConnectionResponse startSession(DeviceConnectionRequest deviceConnectionRequest) {
+        String url = String.format("%s/%s/%s", controlPanelProperties.getControllerPath(), deviceConnectionRequest
+                .getMachineId(), deviceConnectionRequest.getDeviceId());
+        DeviceConnectionResponse deviceConnectionResponse = new DeviceConnectionResponse();
+        deviceConnectionResponse.setSessionId(connectionConfig.getRestTemplate()
+                .postForObject(url, deviceConnectionRequest, DeviceConnectionResponse.class).getSessionId());
+        return deviceConnectionResponse;
     }
 
-
-    public BaseResponse startSession(BaseRequest baseRequest) {
-        String url = String.format("%s/%s/%s", controlPanelProperties.getControllerPath(), baseRequest.getMachineId(), baseRequest.getDeviceId());
-        BaseResponse baseResponse = new BaseResponse();
-        baseResponse.setSessionId(sendPost(url, baseRequest).getSessionId());
-        return baseResponse;
-    }
-
-    public BaseResponse endSession(Long sessionId) {
-        BaseRequest baseRequest = new BaseRequest();
+    public void endSession(Long sessionId) {
         String url = String.format("%s/%s", controlPanelProperties.getControllerPath(), sessionId);
-        sendPost(url, baseRequest);
-        stopSendingMetrics(sessionId);
-        BaseResponse baseResponse = new BaseResponse();
-        baseResponse.setSessionId(sessionId);
-        return baseResponse;
+        connectionConfig.getRestTemplate().postForObject(url, null, DeviceConnectionResponse.class);
+        // stopSendingMetrics(sessionId);
     }
-
-    // Sending metrics using Timer
-
-   /* public BaseResponse sendMetrics(Long sessionId) {
-        Timer timer = new Timer();
-        TimerTask timerTask = new TimerTask() {
-            @Override
-            public void run() {
-                Random random = new Random();
-                Integer value = random.nextInt();
-                MetricsRequest metricsRequest = new MetricsRequest(value);
-                String url = String.format("%s/%s/%s", controlPanelProperties.getControllerPath(), sessionId, controlPanelProperties.getMetricsPath());
-                sendPost(url, metricsRequest);
-            }
-        };
-        timer.scheduleAtFixedRate(timerTask, 10000, 10000);
-        tasks.put(sessionId, timer);
-        BaseResponse baseResponse = new BaseResponse();
-        baseResponse.setSessionId(sessionId);
-        return baseResponse;
-    } */
 
     // Sending metrics using ExecutorService and ScheduledThreadPoolExecutor
   /*
@@ -93,42 +69,32 @@ public class IotSimulatorService {
         return baseResponse;
     } */
     @Async("asyncScheduler")
-    public BaseResponse sendMetrics(Long sessionId, Integer intervalInSeconds) {
-        Runnable task = () -> {
-            Random random = new Random();
-            Integer value = random.nextInt();
-            MetricsRequest metricsRequest = new MetricsRequest(value);
-            String url = String.format("%s/%s/%s", controlPanelProperties.getControllerPath(), sessionId, controlPanelProperties.getMetricsPath());
-            sendPost(url, metricsRequest);
-            log.info("sending metrics in session# {}", sessionId);
-        };
-        asyncConfiguration.taskScheduler().scheduleAtFixedRate(task, intervalInSeconds);
-        tasks.put(sessionId, asyncConfiguration); // VALE!!!
-        BaseResponse baseResponse = new BaseResponse();
-        baseResponse.setSessionId(sessionId);
-        return baseResponse;
+    public void sendMetrics(Long sessionId, Long intervalInSeconds) {
+        if (metricsSimulator.getIsActive()) {
+            metricsSimulator.setSessionId(sessionId);
+            metricsSimulator.setIntervalInSeconds(intervalInSeconds);
+            tasks.put(sessionId, metricsSimulator);
+            metricsSimulator.run();
+
+            // asyncConfiguration.taskScheduler().scheduleAtFixedRate(metricsSimulator, intervalInSeconds);
+        }
     }
 
 
-    public BaseResponse stopSendingMetrics(Long sessionId) {
+    public void stopSendingMetrics(Long sessionId) {
+        tasks.get(sessionId).setIsActive(false);
         log.info("Metric send for session#{} stopped! ", sessionId);
-        // tasks.get(sessionId).cancel();
-        tasks.get(sessionId).taskScheduler().shutdown(); // WRONG!!!
-        BaseResponse baseResponse = new BaseResponse();
-        baseResponse.setSessionId(sessionId);
-        return baseResponse;
     }
 
-
-    private BaseResponse sendPost(String url, BaseRequest body) {
-        return getRestTemplate().postForObject(url, body, BaseResponse.class);
-    }
-
+    /*
+        private DeviceConnectionResponse sendPost(String url, DeviceConnectionRequest body) {
+            return getRestTemplate().postForObject(url, body, DeviceConnectionResponse.class);
+        }
+    */
     @PreDestroy
     private void stopAllSessionsFromSendingMetrics() {
-        for (Map.Entry<Long, AsyncConfiguration> task : tasks.entrySet()) {
-            log.info("Metric send for session#{} stopped! ", task.getKey());  // WRONG!!!
-            tasks.get(task.getKey()).taskScheduler().shutdown();
-        }
+        //   for (Map.Entry<Long, AsyncConfiguration> task : tasks.entrySet()) {
+        //     log.info("Metric send for session#{} stopped! ", task.getKey());  // WRONG!!!
+        //      tasks.get(task.getKey()).taskScheduler().shutdown();
     }
 }

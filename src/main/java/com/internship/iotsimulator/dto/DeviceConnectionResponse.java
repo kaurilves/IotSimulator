@@ -4,11 +4,11 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class BaseRequest {
-
-    private Long machineId;
-    private Long deviceId;
+public class DeviceConnectionResponse implements Serializable {
+    private Long sessionId;
 }

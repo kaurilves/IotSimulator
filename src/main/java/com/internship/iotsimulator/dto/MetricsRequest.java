@@ -9,7 +9,7 @@ import java.io.Serializable;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class MetricsRequest extends BaseRequest implements Serializable {
+public class MetricsRequest extends DeviceConnectionRequest implements Serializable {
 
     private Integer value;
 }
